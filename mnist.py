@@ -25,10 +25,10 @@ import mxnet as mx
 import numpy as np
 import gzip
 import struct
-from common import fit
-from common import utils
+import fit
+import utils
 # This example only for mlp network
-from symbols import mlp
+import mlp
 
 # Use this format (%Y-%m-%dT%H:%M:%SZ) to record timestamp of the metrics
 logging.basicConfig(
