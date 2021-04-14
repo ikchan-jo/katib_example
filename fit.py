@@ -3,19 +3,19 @@
 # distributed with this work for additional information
 # regarding copyright ownership.  The ASF licenses this file
 # to you under the Apache License, Version 2.0 (the
-# 'License'); you may not use this file except in compliance
+# "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
 #
 #   http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
-# 'AS IS' BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
 
-''' example train fit utility '''
+""" example train fit utility """
 import logging
 import os
 import time
@@ -62,8 +62,8 @@ def _load_model(args, rank=0):
         return (None, None, None)
     assert args.model_prefix is not None
     model_prefix = args.model_prefix
-    if rank > 0 and os.path.exists('%s-%d-symbol.json' % (model_prefix, rank)):
-        model_prefix += '-%d' % (rank)
+    if rank > 0 and os.path.exists("%s-%d-symbol.json" % (model_prefix, rank)):
+        model_prefix += "-%d" % (rank)
     sym, arg_params, aux_params = mx.model.load_checkpoint(
         model_prefix, args.load_epoch)
     logging.info('Loaded model %s_%04d.params', model_prefix, args.load_epoch)
@@ -73,20 +73,21 @@ def _load_model(args, rank=0):
 def _save_model(args, rank=0):
     if args.model_prefix is None:
         return None
-    return mx.callback.do_checkpoint(args.model_prefix if rank == 0 else '%s-%d' % (
+    return mx.callback.do_checkpoint(args.model_prefix if rank == 0 else "%s-%d" % (
         args.model_prefix, rank), period=args.save_period)
 
 
 def add_fit_args(parser):
-    '''
+    """
     parser : argparse.ArgumentParser
     return a parser added with args required by fit
-    '''
+    """
     train = parser.add_argument_group('Training', 'model training')
     train.add_argument('--network', type=str,
                        help='the neural network to use')
     train.add_argument('--num-layers', type=int,
-                       help='number of layers in the neural network, required by some networks such as resnet')
+                       help='number of layers in the neural network, \
+                             required by some networks such as resnet')
     train.add_argument('--gpus', type=str,
                        help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu')
     train.add_argument('--kv-store', type=str, default='device',
@@ -127,7 +128,8 @@ def add_fit_args(parser):
     train.add_argument('--dtype', type=str, default='float32',
                        help='precision: float32 or float16')
     train.add_argument('--gc-type', type=str, default='none',
-                       help='type of gradient compression to use, takes `2bit` or `none` for now')
+                       help='type of gradient compression to use, \
+                             takes `2bit` or `none` for now')
     train.add_argument('--gc-threshold', type=float, default=0.5,
                        help='threshold for 2bit gradient compression')
     # additional parameters for large batch sgd
@@ -138,21 +140,23 @@ def add_fit_args(parser):
     train.add_argument('--warmup-strategy', type=str, default='linear',
                        help='the ramping-up strategy for large batch sgd')
     train.add_argument('--profile-worker-suffix', type=str, default='',
-                       help='profile workers actions into this file. During distributed training filename saved will be rank1_ followed by this suffix')
+                       help='profile workers actions into this file. During distributed training\
+                             filename saved will be rank1_ followed by this suffix')
     train.add_argument('--profile-server-suffix', type=str, default='',
-                       help='profile server actions into a file with name like rank1_ followed by this suffix during distributed training')
+                       help='profile server actions into a file with name like rank1_ followed by this suffix \
+                             during distributed training')
     train.add_argument('--use-imagenet-data-augmentation', type=int, default=0,
                        help='enable data augmentation of ImageNet data, default disabled')
     return train
 
 
 def fit(args, network, data_loader, **kwargs):
-    '''
+    """
     train a model
     args : argparse returns
     network : the symbol definition of the nerual network
     data_loader : function that returns the train and val data iterators
-    '''
+    """
     # kvstore
     kv = mx.kvstore.create(args.kv_store)
     if args.gc_type != 'none':
@@ -214,7 +218,7 @@ def fit(args, network, data_loader, **kwargs):
     checkpoint = _save_model(args, kv.rank)
 
     # devices for training
-    devs = mx.cpu() if args.gpus is None or args.gpus == '' else [
+    devs = mx.cpu() if args.gpus is None or args.gpus == "" else [
         mx.gpu(int(i)) for i in args.gpus.split(',')]
 
     # learning rate
@@ -239,7 +243,7 @@ def fit(args, network, data_loader, **kwargs):
         optimizer_params['momentum'] = args.mom
 
     monitor = mx.mon.Monitor(
-        args.monitor, pattern='.*') if args.monitor > 0 else None
+        args.monitor, pattern=".*") if args.monitor > 0 else None
 
     # A limited number of optimizers have a warmup period
     has_warmup = {'lbsgd', 'lbnag'}
@@ -250,7 +254,7 @@ def fit(args, network, data_loader, **kwargs):
         macrobatch_size = args.macrobatch_size
         if macrobatch_size < args.batch_size * nworkers:
             macrobatch_size = args.batch_size * nworkers
-        # batch_scale = round(float(macrobatch_size) / args.batch_size / nworkers +0.4999)
+        #batch_scale = round(float(macrobatch_size) / args.batch_size / nworkers +0.4999)
         batch_scale = math.ceil(
             float(macrobatch_size) / args.batch_size / nworkers)
         optimizer_params['updates_per_epoch'] = epoch_size
@@ -269,8 +273,8 @@ def fit(args, network, data_loader, **kwargs):
             initializer = mx.init.Xavier()
         else:
             initializer = mx.init.Xavier(
-                rnd_type='gaussian', factor_type='in', magnitude=2)
-    # initializer   = mx.init.Xavier(factor_type='in', magnitude=2.34),
+                rnd_type='gaussian', factor_type="in", magnitude=2)
+    # initializer   = mx.init.Xavier(factor_type="in", magnitude=2.34),
     elif args.initializer == 'xavier':
         initializer = mx.init.Xavier()
     elif args.initializer == 'msra':
@@ -303,11 +307,11 @@ def fit(args, network, data_loader, **kwargs):
                     loss_type = 'nll_loss'
                 if loss_type not in supported_loss:
                     logging.warning(loss_type + ' is not an valid loss type, only cross-entropy or '
-                                                'negative likelihood loss is supported!')
+                                    'negative likelihood loss is supported!')
                 else:
                     eval_metrics.append(mx.metric.create(loss_type))
         else:
-            logging.warning('The output is not softmax_output, loss argument will be skipped!')
+            logging.warning("The output is not softmax_output, loss argument will be skipped!")
 
     # callbacks that run after each batch
     batch_end_callbacks = [mx.callback.Speedometer(
@@ -337,26 +341,3 @@ def fit(args, network, data_loader, **kwargs):
         mx.profiler.set_state(state='run', profile_process='server')
     if args.profile_worker_suffix:
         mx.profiler.set_state(state='run', profile_process='worker')
-
-#    data = model.score(val, ['accuracy'])[0][1]
-#    import csv
-    # print(model.score(val, ['accuracy']))
-    # os.system('mkdir /mm')
-    # os.system('mkdir /mm/step')
-#    with open('/mm/step/train.csv', 'wt', newline='') as csvfile:
-#        writer = csv.DictWriter(csvfile, fieldnames=['target', 'score'])
-#        writer.writeheader()
-#        writer.writerow({'target': 'accuracy', 'score': data})
-
-#    home = os.environ['project_home']
-#    workflow_home = os.environ['workflow_path']
-#    step = 'hpo'
-#    target_path = os.environ.get('target_path','default')
-#    seq = os.environ.get('seq', '0')
-
-#    path = os.path.join(home, workflow_home, step, target_path, seq, 'hpo.csv')
-#    print('path: ', path)
-#    with open(path, 'wt', newline='') as csvfile:
-#        writer = csv.DictWriter(csvfile, fieldnames=['target', 'score'])
-#        writer.writeheader()
-#        writer.writerow({'target': 'accuracy', 'score': data})
